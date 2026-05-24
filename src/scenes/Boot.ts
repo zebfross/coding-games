@@ -13,7 +13,7 @@ export class Boot extends Phaser.Scene {
       fontStyle: "bold"
     }).setOrigin(0.5);
 
-    const button = this.add.text(width / 2, height / 2 + 40, "▶ TAP TO START", {
+    const button = this.add.text(width / 2, height / 2 + 40, "▶ TAP OR PRESS ANY KEY", {
       fontFamily: "system-ui, sans-serif",
       fontSize: "42px",
       color: "#ffffff",
@@ -21,12 +21,18 @@ export class Boot extends Phaser.Scene {
       padding: { left: 32, right: 32, top: 18, bottom: 18 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    button.on("pointerdown", () => {
-      // Prime speech synthesis with first user gesture so it works later
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      // Prime speech synthesis with the first user gesture so it works later
       if ("speechSynthesis" in window) {
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
       }
       this.scene.start("Preload");
-    });
+    };
+
+    button.on("pointerdown", start);
+    this.input.keyboard?.once("keydown", start);
   }
 }
