@@ -30,9 +30,9 @@ export const puzzles: PuzzlePlacement[] = [
     tile: { x: 34, y: 7 }, texture: "pig",
     config: { speech: "Oink oink! Piggy!" } },
 
-  // Center clearing: the ice cream truck!
+  // Far east edge: discovered after walking through the trees
   { id: "forest-ice-cream-truck", type: "choice", zone: "forest",
-    tile: { x: 20, y: 12 }, texture: "ice-cream-truck",
+    tile: { x: 37, y: 12 }, texture: "ice-cream-truck",
     config: {
       prompt: "Pick a flavor!",
       options: [

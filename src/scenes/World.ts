@@ -32,8 +32,7 @@ export class World extends Phaser.Scene {
     this.buildMap();
     this.placePuzzlesForZone("forest");
 
-    // Spawn just west of the central ice cream truck so the kid sees it on load
-    this.player = new Player(this, 18, 12);
+    this.player = new Player(this, 20, 12);
 
     this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
