@@ -14,28 +14,48 @@ export interface PuzzlePlacement {
 }
 
 export const puzzles: PuzzlePlacement[] = [
+  // NW clearing
   { id: "forest-bunny", type: "cause-effect", zone: "forest",
-    tile: { x: 18, y: 8 },  texture: "bunny",
+    tile: { x: 6, y: 5 },  texture: "bunny",
     config: { speech: "Bunny!" } },
-  { id: "forest-frog", type: "cause-effect", zone: "forest",
-    tile: { x: 12, y: 14 }, texture: "frog",
-    config: { speech: "Frog! Ribbit!" } },
-  { id: "forest-cat", type: "cause-effect", zone: "forest",
-    tile: { x: 5, y: 7 },   texture: "cat",
-    config: { speech: "Meow! I'm a cat." } },
-  { id: "forest-dog", type: "cause-effect", zone: "forest",
-    tile: { x: 21, y: 12 }, texture: "dog",
-    config: { speech: "Woof! Hello puppy!" } },
   { id: "forest-cow", type: "cause-effect", zone: "forest",
-    tile: { x: 8, y: 4 },   texture: "cow",
+    tile: { x: 10, y: 7 }, texture: "cow",
     config: { speech: "Moo! I'm a cow." } },
+
+  // NE clearing
+  { id: "forest-cat", type: "cause-effect", zone: "forest",
+    tile: { x: 30, y: 5 }, texture: "cat",
+    config: { speech: "Meow! I'm a cat." } },
   { id: "forest-pig", type: "cause-effect", zone: "forest",
-    tile: { x: 19, y: 5 },  texture: "pig",
+    tile: { x: 34, y: 7 }, texture: "pig",
     config: { speech: "Oink oink! Piggy!" } },
+
+  // Center clearing: the ice cream truck!
+  { id: "forest-ice-cream-truck", type: "choice", zone: "forest",
+    tile: { x: 20, y: 12 }, texture: "ice-cream-truck",
+    config: {
+      prompt: "Pick a flavor!",
+      options: [
+        { id: "vanilla",    texture: "flavor-vanilla",    speech: "Vanilla! Yum." },
+        { id: "chocolate",  texture: "flavor-chocolate",  speech: "Chocolate! So tasty." },
+        { id: "strawberry", texture: "flavor-strawberry", speech: "Strawberry! Sweet." },
+        { id: "mint",       texture: "flavor-mint",       speech: "Mint! Cool and fresh." }
+      ]
+    } },
+
+  // SW clearing
+  { id: "forest-frog", type: "cause-effect", zone: "forest",
+    tile: { x: 6, y: 17 },  texture: "frog",
+    config: { speech: "Frog! Ribbit!" } },
   { id: "forest-carrot", type: "cause-effect", zone: "forest",
-    tile: { x: 4, y: 13 },  texture: "carrot",
+    tile: { x: 10, y: 20 }, texture: "carrot",
     config: { speech: "A crunchy carrot!" } },
+
+  // SE clearing
+  { id: "forest-dog", type: "cause-effect", zone: "forest",
+    tile: { x: 30, y: 17 }, texture: "dog",
+    config: { speech: "Woof! Hello puppy!" } },
   { id: "forest-apple", type: "cause-effect", zone: "forest",
-    tile: { x: 22, y: 8 },  texture: "apple",
+    tile: { x: 34, y: 20 }, texture: "apple",
     config: { speech: "A juicy apple!" } }
 ];

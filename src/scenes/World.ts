@@ -8,8 +8,8 @@ import { tutorial } from "../systems/tutorial";
 import { hints } from "../systems/hints";
 
 export const TILE = 64;
-const MAP_W = 24;
-const MAP_H = 16;
+const MAP_W = 40;
+const MAP_H = 24;
 
 type TileType = "grass" | "tree";
 
@@ -32,7 +32,8 @@ export class World extends Phaser.Scene {
     this.buildMap();
     this.placePuzzlesForZone("forest");
 
-    this.player = new Player(this, Math.floor(MAP_W / 2), Math.floor(MAP_H / 2));
+    // Spawn just west of the central ice cream truck so the kid sees it on load
+    this.player = new Player(this, 18, 12);
 
     this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
@@ -107,11 +108,24 @@ export class World extends Phaser.Scene {
       this.tiles[y]![MAP_W - 1] = "tree";
     }
 
+    // Tree clusters create natural "rooms" / clearings between them.
+    // Clearings (kept empty for puzzles): NW, NE, center, SW, SE.
     const interior: Array<[number, number]> = [
-      [5, 4], [6, 4], [15, 3], [9, 11], [3, 10], [20, 11], [16, 13]
+      // Vertical band roughly down the middle, splitting NW from NE
+      [13, 3], [14, 3], [13, 4], [14, 5], [13, 6],
+      [25, 2], [25, 3], [26, 3], [25, 4], [26, 5],
+      // Horizontal band roughly across the middle, splitting top from bottom
+      [4, 11], [5, 11], [6, 12], [10, 11], [11, 12],
+      [29, 11], [30, 12], [31, 11], [34, 12], [35, 11],
+      // Bottom-half dividers (between SW and center, SE and center)
+      [13, 17], [14, 18], [13, 19],
+      [26, 17], [25, 18], [26, 19],
+      // Scattered accents
+      [8, 6], [33, 7], [3, 4], [37, 4],
+      [7, 20], [33, 20], [20, 21], [20, 2]
     ];
     for (const [tx, ty] of interior) {
-      this.tiles[ty]![tx] = "tree";
+      if (this.tiles[ty]?.[tx] !== undefined) this.tiles[ty]![tx] = "tree";
     }
 
     // one TileSprite for the whole grass ground (one draw call, native 256px texture

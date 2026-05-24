@@ -1,5 +1,6 @@
 import type { PuzzlePlugin } from "./types";
 import { causeEffect } from "./causeEffect";
+import { choice } from "./choice";
 
 const plugins = new Map<string, PuzzlePlugin<any>>();
 
@@ -19,3 +20,4 @@ export function getPlugin(type: string): PuzzlePlugin<any> | undefined {
 //   2. Import + register it here
 //   3. Reference its type from src/data/puzzles.ts
 register(causeEffect);
+register(choice);
