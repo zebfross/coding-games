@@ -78,22 +78,21 @@ export class ChoicePopup extends Phaser.Scene {
   }
 
   private wireInput() {
-    const kb = this.input.keyboard;
-    if (kb) {
-      kb.on("keydown-LEFT",  () => this.moveFocus(-1));
-      kb.on("keydown-UP",    () => this.moveFocus(-1));
-      kb.on("keydown-RIGHT", () => this.moveFocus(1));
-      kb.on("keydown-DOWN",  () => this.moveFocus(1));
-      kb.on("keydown-SPACE", () => this.pickFocused());
-      kb.on("keydown-ENTER", () => this.pickFocused());
-      kb.on("keydown-ESC",   () => this.close());
-    }
-
-    // Also pick up the on-screen d-pad (and any other input.press source)
+    // Directional input is already routed through the global `input` system
+    // by HUD's keyboard listeners (and the on-screen d-pad), so listening to
+    // step events handles both keyboard arrows and touch. Direct keyboard
+    // handlers for arrows would double-fire and reverse the navigation.
     this.stepHandler = (dir: Direction) => {
       this.moveFocus(dir === "left" || dir === "up" ? -1 : 1);
     };
     input.on("step", this.stepHandler);
+
+    const kb = this.input.keyboard;
+    if (kb) {
+      kb.on("keydown-SPACE", () => this.pickFocused());
+      kb.on("keydown-ENTER", () => this.pickFocused());
+      kb.on("keydown-ESC",   () => this.close());
+    }
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.stepHandler) input.off("step", this.stepHandler);
