@@ -4,6 +4,7 @@ import { Preload } from "./scenes/Preload";
 import { World } from "./scenes/World";
 import { HUD } from "./scenes/HUD";
 import { ChoicePopup } from "./scenes/ChoicePopup";
+import { DrivingGame } from "./scenes/DrivingGame";
 import { audio } from "./systems/audio";
 
 // Side-effect import: registers all puzzle plugins
@@ -19,5 +20,5 @@ new Phaser.Game({
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  scene: [Boot, Preload, World, HUD, ChoicePopup]
+  scene: [Boot, Preload, World, HUD, ChoicePopup, DrivingGame]
 });

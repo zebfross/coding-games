@@ -18,7 +18,11 @@ const IMAGE_ASSETS: Array<[key: string, file: string]> = [
   ["ice-cream-truck", "ice-cream-truck.png"],
   ["flavor-strawberry", "flavor-strawberry.png"],
   ["flavor-vanilla", "flavor-vanilla.png"],
-  ["flavor-mint", "flavor-mint.png"]
+  ["flavor-mint", "flavor-mint.png"],
+  ["road", "road.png"],
+  ["car-red", "car-red.png"],
+  ["car-blue", "car-blue.png"],
+  ["car-yellow", "car-yellow.png"]
 ];
 
 export class Preload extends Phaser.Scene {

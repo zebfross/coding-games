@@ -66,6 +66,12 @@ export const forestPack: ZonePack = {
         ]
       } },
 
+    // Central clearing — bump the red car to play the driving mini-game
+    { id: "forest-driving-car", type: "driving",
+      tile: { x: 20, y: 15 }, texture: "car-red",
+      displayScale: 1.4,
+      config: {} },
+
     // SW clearing
     { id: "forest-frog", type: "cause-effect",
       tile: { x: 6, y: 17 },  texture: "frog",
