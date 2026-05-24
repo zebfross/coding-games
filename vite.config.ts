@@ -8,6 +8,12 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
+      workbox: {
+        // Take over from the previous SW the moment a new version is detected,
+        // instead of waiting for all clients to close
+        skipWaiting: true,
+        clientsClaim: true
+      },
       manifest: {
         name: "Coding Games",
         short_name: "CodingGames",
