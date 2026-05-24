@@ -54,8 +54,6 @@ export class Player extends Phaser.GameObjects.Sprite {
       onComplete: () => {
         this.busy = false;
         this.world.onPlayerEnter(tx, ty);
-        const held = input.getHeldDir();
-        if (held) this.tryStep(held);
       }
     });
   }
