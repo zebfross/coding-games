@@ -11,6 +11,12 @@ export interface PuzzlePlacement {
   texture: string;
   /** Plugin-specific config; shape depends on the plugin. */
   config: Record<string, unknown>;
+  /**
+   * Visual scale relative to one tile. Default 1 (sprite fills 1 tile).
+   * Use values >1 for things that should look larger than an animal,
+   * like the ice cream truck. Collision is always 1 tile.
+   */
+  displayScale?: number;
 }
 
 export const puzzles: PuzzlePlacement[] = [
@@ -33,6 +39,7 @@ export const puzzles: PuzzlePlacement[] = [
   // Far east edge: discovered after walking through the trees
   { id: "forest-ice-cream-truck", type: "choice", zone: "forest",
     tile: { x: 37, y: 12 }, texture: "ice-cream-truck",
+    displayScale: 2,
     config: {
       prompt: "Pick a flavor!",
       options: [

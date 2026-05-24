@@ -149,7 +149,9 @@ export class World extends Phaser.Scene {
         continue;
       }
       const { px, py } = this.tileToPixel(placement.tile.x, placement.tile.y);
-      const sprite = this.add.sprite(px, py, placement.texture).setDisplaySize(TILE, TILE);
+      const scale = placement.displayScale ?? 1;
+      const sprite = this.add.sprite(px, py, placement.texture)
+        .setDisplaySize(TILE * scale, TILE * scale);
       sprite.setData("baseScaleX", sprite.scaleX);
       sprite.setData("baseScaleY", sprite.scaleY);
 
