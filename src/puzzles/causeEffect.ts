@@ -1,4 +1,5 @@
 import { audio } from "../systems/audio";
+import { getBaseScale } from "../util/sprite";
 import type { PuzzlePlugin } from "./types";
 
 export interface CauseEffectConfig {
@@ -15,14 +16,19 @@ export const causeEffect: PuzzlePlugin<CauseEffectConfig> = {
   walkable: false,
   onBump(ctx) {
     audio.say(ctx.config.speech);
+    const base = getBaseScale(ctx.sprite);
+    // Kill any prior bounce/pulse so we always start from the true base scale
+    ctx.scene.tweens.killTweensOf(ctx.sprite);
+    ctx.sprite.setScale(base.x, base.y);
     ctx.scene.tweens.add({
       targets: ctx.sprite,
-      scaleX: { from: 1, to: 1.25 },
-      scaleY: { from: 1, to: 1.25 },
+      scaleX: base.x * 1.25,
+      scaleY: base.y * 1.25,
       yoyo: true,
       duration: 140,
       repeat: 1,
-      ease: "Quad.easeOut"
+      ease: "Quad.easeOut",
+      onComplete: () => ctx.sprite.setScale(base.x, base.y)
     });
   }
 };

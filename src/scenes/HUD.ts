@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { input, Direction, isTouchDevice } from "../systems/input";
+import { audio } from "../systems/audio";
 
 const KEY_TO_DIR: Record<string, Direction> = {
   UP: "up", DOWN: "down", LEFT: "left", RIGHT: "right",
@@ -8,6 +9,9 @@ const KEY_TO_DIR: Record<string, Direction> = {
 
 export class HUD extends Phaser.Scene {
   private dpad: Phaser.GameObjects.Container | null = null;
+  private muteButton: Phaser.GameObjects.Container | null = null;
+  private muteIcon: Phaser.GameObjects.Text | null = null;
+  private unsubscribeMute: (() => void) | null = null;
 
   constructor() { super({ key: "HUD", active: false }); }
 
@@ -19,12 +23,21 @@ export class HUD extends Phaser.Scene {
         key.on("down", () => input.press(dir));
         key.on("up", () => input.release(dir));
       }
+      // 'M' toggles mute from the keyboard
+      kb.addKey("M").on("down", () => audio.toggleMuted());
     }
 
     if (isTouchDevice()) this.buildDpad();
+    this.buildMuteButton();
 
     window.addEventListener("blur", () => input.releaseAll());
-    this.scale.on("resize", () => this.layoutDpad());
+    this.scale.on("resize", () => this.layout());
+
+    this.unsubscribeMute = audio.onChange(m => this.updateMuteIcon(m));
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unsubscribeMute?.();
+    });
   }
 
   private buildDpad() {
@@ -51,12 +64,42 @@ export class HUD extends Phaser.Scene {
       c.add([bg, txt]);
     }
     this.dpad = c;
-    this.layoutDpad();
+    this.layout();
   }
 
-  private layoutDpad() {
-    if (!this.dpad) return;
-    const pad = 140;
-    this.dpad.setPosition(pad, this.scale.height - pad);
+  private buildMuteButton() {
+    const R = 40;
+    const c = this.add.container(0, 0);
+    const bg = this.add.circle(0, 0, R, 0xffffff, 0.85).setStrokeStyle(4, 0x1c8a3a);
+    const icon = this.add.text(0, 0, this.iconFor(audio.isMuted()), {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "36px",
+      color: "#1c8a3a"
+    }).setOrigin(0.5);
+    bg.setInteractive({ useHandCursor: true });
+    bg.on("pointerdown", () => audio.toggleMuted());
+    c.add([bg, icon]);
+    this.muteButton = c;
+    this.muteIcon = icon;
+    this.layout();
+  }
+
+  private updateMuteIcon(muted: boolean) {
+    this.muteIcon?.setText(this.iconFor(muted));
+  }
+
+  private iconFor(muted: boolean): string {
+    return muted ? "🔇" : "🔊";
+  }
+
+  private layout() {
+    if (this.dpad) {
+      const pad = 140;
+      this.dpad.setPosition(pad, this.scale.height - pad);
+    }
+    if (this.muteButton) {
+      const pad = 60;
+      this.muteButton.setPosition(this.scale.width - pad, pad);
+    }
   }
 }

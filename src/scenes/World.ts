@@ -137,6 +137,8 @@ export class World extends Phaser.Scene {
       }
       const { px, py } = this.tileToPixel(placement.tile.x, placement.tile.y);
       const sprite = this.add.sprite(px, py, placement.texture).setDisplaySize(TILE, TILE);
+      sprite.setData("baseScaleX", sprite.scaleX);
+      sprite.setData("baseScaleY", sprite.scaleY);
 
       const placed: PlacedPuzzle = {
         placement,

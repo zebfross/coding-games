@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { World } from "../scenes/World";
+import { getBaseScale } from "../util/sprite";
 
 const PULSE_FACTOR = 1.18;
 
@@ -7,8 +8,6 @@ class HintSystem {
   private world: World | null = null;
   private tween: Phaser.Tweens.Tween | null = null;
   private target: Phaser.GameObjects.Sprite | null = null;
-  private baseScaleX = 1;
-  private baseScaleY = 1;
 
   start(world: World) {
     this.stop();
@@ -26,12 +25,13 @@ class HintSystem {
     const puzzle = this.world.getPuzzleById(puzzleId);
     if (!puzzle) return;
     this.target = puzzle.context.sprite;
-    this.baseScaleX = this.target.scaleX;
-    this.baseScaleY = this.target.scaleY;
+    const base = getBaseScale(this.target);
+    this.world.tweens.killTweensOf(this.target);
+    this.target.setScale(base.x, base.y);
     this.tween = this.world.tweens.add({
       targets: this.target,
-      scaleX: this.baseScaleX * PULSE_FACTOR,
-      scaleY: this.baseScaleY * PULSE_FACTOR,
+      scaleX: base.x * PULSE_FACTOR,
+      scaleY: base.y * PULSE_FACTOR,
       duration: 550,
       yoyo: true,
       repeat: -1,
@@ -45,7 +45,8 @@ class HintSystem {
       this.tween = null;
     }
     if (this.target) {
-      this.target.setScale(this.baseScaleX, this.baseScaleY);
+      const base = getBaseScale(this.target);
+      this.target.setScale(base.x, base.y);
       this.target = null;
     }
   }
