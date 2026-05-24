@@ -107,7 +107,6 @@ export class World extends Phaser.Scene {
       this.tiles[y]![MAP_W - 1] = "tree";
     }
 
-    // a few interior trees for character
     const interior: Array<[number, number]> = [
       [5, 4], [6, 4], [15, 3], [9, 11], [3, 10], [20, 11], [16, 13]
     ];
@@ -115,13 +114,15 @@ export class World extends Phaser.Scene {
       this.tiles[ty]![tx] = "tree";
     }
 
+    // one TileSprite for the whole grass ground (one draw call, native 256px texture
+    // repeats every 4 tiles for natural variation)
+    this.add.tileSprite(0, 0, MAP_W * TILE, MAP_H * TILE, "grass").setOrigin(0);
+
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
+        if (this.tiles[y]![x] !== "tree") continue;
         const { px, py } = this.tileToPixel(x, y);
-        this.add.image(px, py, "grass");
-        if (this.tiles[y]![x] === "tree") {
-          this.add.image(px, py, "tree");
-        }
+        this.add.image(px, py, "tree").setDisplaySize(TILE, TILE);
       }
     }
   }
@@ -135,7 +136,7 @@ export class World extends Phaser.Scene {
         continue;
       }
       const { px, py } = this.tileToPixel(placement.tile.x, placement.tile.y);
-      const sprite = this.add.sprite(px, py, placement.texture);
+      const sprite = this.add.sprite(px, py, placement.texture).setDisplaySize(TILE, TILE);
 
       const placed: PlacedPuzzle = {
         placement,

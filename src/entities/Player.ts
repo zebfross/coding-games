@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { input, DIR_VEC, type Direction } from "../systems/input";
-import type { World } from "../scenes/World";
+import { World, TILE } from "../scenes/World";
 
 const STEP_DURATION = 150;
 
@@ -17,6 +17,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.world = world;
     this.tileX = tileX;
     this.tileY = tileY;
+    this.setDisplaySize(TILE, TILE);
     world.add.existing(this);
 
     input.on("step", this.handleStep);
