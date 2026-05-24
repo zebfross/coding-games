@@ -1,29 +1,68 @@
 import Phaser from "phaser";
-import { input } from "../systems/input";
+import { input, DIR_VEC, type Direction } from "../systems/input";
+import type { World } from "../scenes/World";
 
-const SPEED = 180;
+const STEP_DURATION = 150;
 
-export class Player extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, "player");
-    scene.add.existing(this);
-    scene.physics.add.existing(this);
-    this.setCollideWorldBounds(true);
-    if (this.body) {
-      (this.body as Phaser.Physics.Arcade.Body).setSize(32, 32).setOffset(8, 12);
-    }
+export class Player extends Phaser.GameObjects.Sprite {
+  tileX: number;
+  tileY: number;
+  facing: Direction = "down";
+  private busy = false;
+  private world: World;
+
+  constructor(world: World, tileX: number, tileY: number) {
+    const { px, py } = world.tileToPixel(tileX, tileY);
+    super(world, px, py, "player");
+    this.world = world;
+    this.tileX = tileX;
+    this.tileY = tileY;
+    world.add.existing(this);
+
+    input.on("step", this.handleStep);
   }
 
-  override preUpdate(time: number, delta: number) {
-    super.preUpdate(time, delta);
-    const v = input.getVector();
-    const len = Math.hypot(v.x, v.y);
-    if (len === 0) {
-      this.setVelocity(0, 0);
+  override destroy(fromScene?: boolean) {
+    input.off("step", this.handleStep);
+    super.destroy(fromScene);
+  }
+
+  private handleStep = (dir: Direction) => this.tryStep(dir);
+
+  private tryStep(dir: Direction) {
+    if (this.busy) return;
+    this.setFacing(dir);
+    const { dx, dy } = DIR_VEC[dir];
+    const tx = this.tileX + dx;
+    const ty = this.tileY + dy;
+
+    if (!this.world.isWalkable(tx, ty)) {
+      this.world.bump(tx, ty, dir);
       return;
     }
-    this.setVelocity((v.x / len) * SPEED, (v.y / len) * SPEED);
-    if (v.x < 0) this.setFlipX(true);
-    else if (v.x > 0) this.setFlipX(false);
+
+    this.tileX = tx;
+    this.tileY = ty;
+    this.busy = true;
+    const { px, py } = this.world.tileToPixel(tx, ty);
+    this.scene.tweens.add({
+      targets: this,
+      x: px,
+      y: py,
+      duration: STEP_DURATION,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.busy = false;
+        this.world.onPlayerEnter(tx, ty);
+        const held = input.getHeldDir();
+        if (held) this.tryStep(held);
+      }
+    });
+  }
+
+  private setFacing(dir: Direction) {
+    this.facing = dir;
+    if (dir === "left") this.setFlipX(true);
+    else if (dir === "right") this.setFlipX(false);
   }
 }

@@ -5,6 +5,9 @@ import { World } from "./scenes/World";
 import { HUD } from "./scenes/HUD";
 import { audio } from "./systems/audio";
 
+// Side-effect import: registers all puzzle plugins
+import "./puzzles/registry";
+
 audio.init();
 
 new Phaser.Game({
@@ -14,10 +17,6 @@ new Phaser.Game({
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH
-  },
-  physics: {
-    default: "arcade",
-    arcade: { gravity: { x: 0, y: 0 }, debug: false }
   },
   scene: [Boot, Preload, World, HUD]
 });
