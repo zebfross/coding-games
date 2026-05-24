@@ -27,7 +27,10 @@ export class Player extends Phaser.GameObjects.Sprite {
     super.destroy(fromScene);
   }
 
-  private handleStep = (dir: Direction) => this.tryStep(dir);
+  private handleStep = (dir: Direction) => {
+    this.world.bus.emit("input", { dir });
+    this.tryStep(dir);
+  };
 
   private tryStep(dir: Direction) {
     if (this.busy) return;

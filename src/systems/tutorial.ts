@@ -1,0 +1,96 @@
+import type { World } from "../scenes/World";
+import { audio } from "./audio";
+import { hints } from "./hints";
+import * as progress from "./progress";
+import { tutorials, type TutorialStep, type TutorialTrigger } from "../data/tutorial";
+
+const PROMPT_DELAY_MS = 350;
+
+class TutorialSystem {
+  private world: World | null = null;
+  private zone: string | null = null;
+  private currentStep: TutorialStep | null = null;
+  private currentIndex = 0;
+  private listener: ((data: unknown) => void) | null = null;
+  private listenerEvent: string | null = null;
+
+  start(world: World, zone: string) {
+    this.stop();
+    this.world = world;
+    this.zone = zone;
+    const idx = progress.load().tutorialProgress[zone] ?? 0;
+    this.runStep(idx);
+  }
+
+  stop() {
+    this.detach();
+    hints.clear();
+    this.world = null;
+    this.zone = null;
+    this.currentStep = null;
+  }
+
+  private runStep(index: number) {
+    if (!this.world || !this.zone) return;
+    const steps = tutorials[this.zone];
+    if (!steps || index >= steps.length) {
+      this.stop();
+      return;
+    }
+    const step = steps[index]!;
+    this.currentStep = step;
+    this.currentIndex = index;
+
+    // Small delay so the speech doesn't collide with scene transition / prior bump speech
+    window.setTimeout(() => {
+      if (this.currentStep !== step) return;
+      audio.say(step.prompt);
+    }, PROMPT_DELAY_MS);
+
+    if (step.hint?.kind === "pulse-puzzle") {
+      hints.pulse(step.hint.puzzleId);
+    } else {
+      hints.clear();
+    }
+
+    this.attach(step.completeOn, () => this.complete(index));
+  }
+
+  private complete(index: number) {
+    if (!this.zone) return;
+    this.detach();
+    const p = progress.load();
+    p.tutorialProgress = { ...p.tutorialProgress, [this.zone]: index + 1 };
+    progress.save(p);
+    // defer to next tick so the same input doesn't satisfy the next step
+    window.setTimeout(() => this.runStep(index + 1), 0);
+  }
+
+  private attach(trigger: TutorialTrigger, onMatch: () => void) {
+    if (!this.world) return;
+    this.detach();
+    const handler = (data: unknown) => {
+      if (!matches(trigger, data)) return;
+      onMatch();
+    };
+    this.world.bus.on(trigger.event, handler);
+    this.listener = handler;
+    this.listenerEvent = trigger.event;
+  }
+
+  private detach() {
+    if (this.world && this.listener && this.listenerEvent) {
+      this.world.bus.off(this.listenerEvent, this.listener);
+    }
+    this.listener = null;
+    this.listenerEvent = null;
+  }
+}
+
+function matches(trigger: TutorialTrigger, data: unknown): boolean {
+  if (trigger.event === "input") return true;
+  const d = data as { id?: string } | undefined;
+  return d?.id === trigger.puzzleId;
+}
+
+export const tutorial = new TutorialSystem();

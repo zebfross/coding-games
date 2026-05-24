@@ -4,6 +4,8 @@ import { puzzles as allPuzzles, type PuzzlePlacement } from "../data/puzzles";
 import { getPlugin } from "../puzzles/registry";
 import type { PuzzleContext, PuzzlePlugin } from "../puzzles/types";
 import type { Direction } from "../systems/input";
+import { tutorial } from "../systems/tutorial";
+import { hints } from "../systems/hints";
 
 export const TILE = 64;
 const MAP_W = 24;
@@ -19,9 +21,10 @@ interface PlacedPuzzle {
 }
 
 export class World extends Phaser.Scene {
+  readonly bus = new Phaser.Events.EventEmitter();
   private tiles: TileType[][] = [];
   private placedPuzzles = new Map<string, PlacedPuzzle>();
-  private player!: Player;
+  player!: Player;
 
   constructor() { super("World"); }
 
@@ -34,6 +37,15 @@ export class World extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
     this.cameras.main.setZoom(1.5);
+
+    hints.start(this);
+    tutorial.start(this, "forest");
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      tutorial.stop();
+      hints.stop();
+      this.bus.removeAllListeners();
+    });
   }
 
   tileToPixel(x: number, y: number) {
@@ -50,17 +62,25 @@ export class World extends Phaser.Scene {
 
   bump(x: number, y: number, from: Direction): void {
     const puzzle = this.puzzleAt(x, y);
-    if (puzzle && puzzle.plugin.onBump) {
+    if (puzzle?.plugin.onBump) {
       puzzle.plugin.onBump(puzzle.context, from);
     }
+    if (puzzle) this.bus.emit("puzzle-bumped", { id: puzzle.placement.id });
   }
 
   onPlayerEnter(x: number, y: number): void {
     const puzzle = this.puzzleAt(x, y);
-    if (puzzle && puzzle.plugin.onEnter) {
-      // Direction the player came from is unknown here; pass facing later if needed.
+    if (puzzle?.plugin.onEnter) {
       puzzle.plugin.onEnter(puzzle.context, this.player.facing);
     }
+    if (puzzle) this.bus.emit("puzzle-entered", { id: puzzle.placement.id });
+  }
+
+  getPuzzleById(id: string): PlacedPuzzle | undefined {
+    for (const p of this.placedPuzzles.values()) {
+      if (p.placement.id === id) return p;
+    }
+    return undefined;
   }
 
   private puzzleAt(x: number, y: number): PlacedPuzzle | undefined {
@@ -127,7 +147,10 @@ export class World extends Phaser.Scene {
           tile: { ...placement.tile },
           sprite,
           config: placement.config,
-          markComplete: () => { placed.complete = true; }
+          markComplete: () => {
+            placed.complete = true;
+            this.bus.emit("puzzle-completed", { id: placement.id });
+          }
         }
       };
       this.placedPuzzles.set(`${placement.tile.x},${placement.tile.y}`, placed);
