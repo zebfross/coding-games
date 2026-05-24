@@ -66,9 +66,9 @@ export const forestPack: ZonePack = {
         ]
       } },
 
-    // Central clearing — bump the red car to play the driving mini-game
+    // Far west edge: mirrors the ice cream truck on the east, found by exploring
     { id: "forest-driving-car", type: "driving",
-      tile: { x: 20, y: 15 }, texture: "car-red",
+      tile: { x: 2, y: 12 }, texture: "car-red",
       displayScale: 1.4,
       config: {} },
 
