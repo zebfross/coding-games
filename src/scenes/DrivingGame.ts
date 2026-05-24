@@ -65,10 +65,9 @@ export class DrivingGame extends Phaser.Scene {
     const laneOffset = roadDisplayH * 0.18;
     this.laneYs = [height / 2 - laneOffset, height / 2 + laneOffset];
 
-    // Player faces right (going right on the road); source art faces left, so flip.
+    // Source art faces right (the direction the player drives), so no flip needed.
     this.playerCar = this.add.sprite(PLAYER_X, this.laneYs[this.laneIndex]!, "car-red")
-      .setDisplaySize(CAR_DISPLAY, CAR_DISPLAY)
-      .setFlipX(true);
+      .setDisplaySize(CAR_DISPLAY, CAR_DISPLAY);
 
     this.add.text(width / 2, 56, "Dodge the cars!", {
       fontFamily: "system-ui, sans-serif",
@@ -232,8 +231,10 @@ export class DrivingGame extends Phaser.Scene {
   private spawnTraffic() {
     const lane = Phaser.Math.Between(0, this.laneYs.length - 1);
     const texture = Phaser.Math.RND.pick(["car-blue", "car-yellow"]);
+    // Traffic moves left toward the player, so flip to face that direction
     const car = this.add.sprite(this.scale.width + 100, this.laneYs[lane]!, texture)
-      .setDisplaySize(CAR_DISPLAY, CAR_DISPLAY);
+      .setDisplaySize(CAR_DISPLAY, CAR_DISPLAY)
+      .setFlipX(true);
     this.traffic.push(car);
   }
 
