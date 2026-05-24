@@ -5,15 +5,14 @@ export default defineConfig({
   base: "/coding-games/",
   server: { host: true },
   plugins: [
+    // Self-destroying SW: actively unregisters and clears caches for anyone who
+    // installed a previous version, then removes itself. Keeps the manifest so
+    // "Add to Home Screen" still works on mobile, but there's no offline cache
+    // and every load fetches the latest assets.
     VitePWA({
+      selfDestroying: true,
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
-      workbox: {
-        // Take over from the previous SW the moment a new version is detected,
-        // instead of waiting for all clients to close
-        skipWaiting: true,
-        clientsClaim: true
-      },
       manifest: {
         name: "Coding Games",
         short_name: "CodingGames",
