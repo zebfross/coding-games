@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { audio } from "../systems/audio";
+import { input, type Direction } from "../systems/input";
 import type { ChoiceConfig, ChoiceOption } from "../puzzles/choice";
 
 interface InitData {
@@ -9,22 +10,34 @@ interface InitData {
 
 const OPTION_BUTTON_R = 96;
 const OPTION_SPACING = 240;
+const FOCUS_SCALE = 1.12;
+
+interface OptionView {
+  option: ChoiceOption;
+  container: Phaser.GameObjects.Container;
+  bg: Phaser.GameObjects.Arc;
+}
 
 export class ChoicePopup extends Phaser.Scene {
   private onClose: (() => void) | null = null;
   private locked = false;
+  private views: OptionView[] = [];
+  private focusIndex = 0;
+  private stepHandler: ((dir: Direction) => void) | null = null;
 
   constructor() { super("ChoicePopup"); }
 
   init(data: InitData) {
     this.onClose = data.onClose;
     this.cameras.main.setBackgroundColor("rgba(0,0,0,0)");
+    this.views = [];
+    this.focusIndex = 0;
+    this.locked = false;
   }
 
   create(data: InitData) {
     const { width, height } = this.scale;
 
-    // dim backdrop that swallows taps so the world doesn't get them
     this.add.rectangle(0, 0, width, height, 0x000000, 0.55)
       .setOrigin(0)
       .setInteractive();
@@ -41,39 +54,87 @@ export class ChoicePopup extends Phaser.Scene {
     const opts = data.config.options;
     const startX = width / 2 - ((opts.length - 1) * OPTION_SPACING) / 2;
     const y = height / 2 + 20;
+    opts.forEach((opt, i) => this.buildOption(startX + i * OPTION_SPACING, y, opt, i));
 
-    opts.forEach((opt, i) => {
-      const x = startX + i * OPTION_SPACING;
-      this.buildOption(x, y, opt);
-    });
-
-    this.input.keyboard?.on("keydown-ESC", () => this.close());
+    this.setFocus(0);
+    this.wireInput();
   }
 
-  private buildOption(x: number, y: number, opt: ChoiceOption) {
-    const bg = this.add.circle(x, y, OPTION_BUTTON_R, 0xffffff, 0.95)
+  private buildOption(x: number, y: number, opt: ChoiceOption, index: number) {
+    const container = this.add.container(x, y);
+    const bg = this.add.circle(0, 0, OPTION_BUTTON_R, 0xffffff, 0.95)
       .setStrokeStyle(6, 0x1c8a3a);
-    const sprite = this.add.sprite(x, y, opt.texture)
+    const sprite = this.add.sprite(0, 0, opt.texture)
       .setDisplaySize(OPTION_BUTTON_R * 1.5, OPTION_BUTTON_R * 1.5);
+    container.add([bg, sprite]);
 
     bg.setInteractive({ useHandCursor: true });
-    bg.on("pointerdown", () => this.pick(opt, sprite));
+    bg.on("pointerover", () => this.setFocus(index));
+    bg.on("pointerdown", () => this.pickIndex(index));
     sprite.setInteractive({ useHandCursor: true });
-    sprite.on("pointerdown", () => this.pick(opt, sprite));
+    sprite.on("pointerdown", () => this.pickIndex(index));
+
+    this.views.push({ option: opt, container, bg });
   }
 
-  private pick(opt: ChoiceOption, sprite: Phaser.GameObjects.Sprite) {
-    if (this.locked) return;
-    this.locked = true;
-    audio.say(opt.speech);
+  private wireInput() {
+    const kb = this.input.keyboard;
+    if (kb) {
+      kb.on("keydown-LEFT",  () => this.moveFocus(-1));
+      kb.on("keydown-UP",    () => this.moveFocus(-1));
+      kb.on("keydown-RIGHT", () => this.moveFocus(1));
+      kb.on("keydown-DOWN",  () => this.moveFocus(1));
+      kb.on("keydown-SPACE", () => this.pickFocused());
+      kb.on("keydown-ENTER", () => this.pickFocused());
+      kb.on("keydown-ESC",   () => this.close());
+    }
 
-    // celebratory bounce on the chosen sprite, then close
-    const baseX = sprite.scaleX;
-    const baseY = sprite.scaleY;
+    // Also pick up the on-screen d-pad (and any other input.press source)
+    this.stepHandler = (dir: Direction) => {
+      this.moveFocus(dir === "left" || dir === "up" ? -1 : 1);
+    };
+    input.on("step", this.stepHandler);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.stepHandler) input.off("step", this.stepHandler);
+      this.stepHandler = null;
+    });
+  }
+
+  private moveFocus(delta: number) {
+    if (this.locked || this.views.length === 0) return;
+    const n = this.views.length;
+    this.setFocus((this.focusIndex + delta + n) % n);
+  }
+
+  private setFocus(index: number) {
+    this.focusIndex = index;
+    this.views.forEach((v, i) => {
+      const focused = i === index;
+      v.container.setScale(focused ? FOCUS_SCALE : 1);
+      v.bg.setStrokeStyle(focused ? 10 : 6, focused ? 0xffd23f : 0x1c8a3a);
+    });
+  }
+
+  private pickFocused() {
+    if (this.locked) return;
+    const view = this.views[this.focusIndex];
+    if (view) this.pickIndex(this.focusIndex);
+  }
+
+  private pickIndex(index: number) {
+    if (this.locked) return;
+    const view = this.views[index];
+    if (!view) return;
+    this.locked = true;
+    this.setFocus(index);
+    audio.say(view.option.speech);
+
+    const baseScale = FOCUS_SCALE;
     this.tweens.add({
-      targets: sprite,
-      scaleX: baseX * 1.3,
-      scaleY: baseY * 1.3,
+      targets: view.container,
+      scaleX: baseScale * 1.2,
+      scaleY: baseScale * 1.2,
       duration: 200,
       yoyo: true,
       repeat: 1,

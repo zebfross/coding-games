@@ -35,6 +35,9 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   private tryStep(dir: Direction) {
     if (this.busy) return;
+    // Guard against the popup-open case: input events still fire (so the
+    // ChoicePopup can use them), but the player shouldn't queue any moves.
+    if (this.scene.scene.isPaused()) return;
     this.setFacing(dir);
     const { dx, dy } = DIR_VEC[dir];
     const tx = this.tileX + dx;
