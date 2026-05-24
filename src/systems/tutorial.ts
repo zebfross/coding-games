@@ -1,23 +1,24 @@
 import type { World } from "../scenes/World";
+import type { TutorialStep, TutorialTrigger } from "../data/pack";
 import { audio } from "./audio";
 import { hints } from "./hints";
 import * as progress from "./progress";
-import { tutorials, type TutorialStep, type TutorialTrigger } from "../data/tutorial";
 
 const PROMPT_DELAY_MS = 350;
 
 class TutorialSystem {
   private world: World | null = null;
   private zone: string | null = null;
+  private steps: TutorialStep[] = [];
   private currentStep: TutorialStep | null = null;
-  private currentIndex = 0;
   private listener: ((data: unknown) => void) | null = null;
   private listenerEvent: string | null = null;
 
-  start(world: World, zone: string) {
+  start(world: World, zone: string, steps: TutorialStep[]) {
     this.stop();
     this.world = world;
     this.zone = zone;
+    this.steps = steps;
     const idx = progress.load().tutorialProgress[zone] ?? 0;
     this.runStep(idx);
   }
@@ -27,19 +28,18 @@ class TutorialSystem {
     hints.clear();
     this.world = null;
     this.zone = null;
+    this.steps = [];
     this.currentStep = null;
   }
 
   private runStep(index: number) {
     if (!this.world || !this.zone) return;
-    const steps = tutorials[this.zone];
-    if (!steps || index >= steps.length) {
+    if (index >= this.steps.length) {
       this.stop();
       return;
     }
-    const step = steps[index]!;
+    const step = this.steps[index]!;
     this.currentStep = step;
-    this.currentIndex = index;
 
     // Small delay so the speech doesn't collide with scene transition / prior bump speech
     window.setTimeout(() => {

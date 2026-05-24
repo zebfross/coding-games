@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { getDefaultPack } from "../data/packs";
 
 const SPRITE_PATH = "assets/sprites";
 
@@ -30,7 +31,7 @@ export class Preload extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start("World");
+    this.scene.start("World", { pack: getDefaultPack() });
     this.scene.launch("HUD");
   }
 }

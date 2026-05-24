@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Player } from "../entities/Player";
-import { puzzles as allPuzzles, type PuzzlePlacement } from "../data/puzzles";
+import type { PuzzlePlacement, ZonePack } from "../data/pack";
+import { getDefaultPack } from "../data/packs";
 import { getPlugin } from "../puzzles/registry";
 import type { PuzzleContext, PuzzlePlugin } from "../puzzles/types";
 import type { Direction } from "../systems/input";
@@ -8,8 +9,6 @@ import { tutorial } from "../systems/tutorial";
 import { hints } from "../systems/hints";
 
 export const TILE = 64;
-const MAP_W = 40;
-const MAP_H = 24;
 
 type TileType = "grass" | "tree";
 
@@ -22,24 +21,30 @@ interface PlacedPuzzle {
 
 export class World extends Phaser.Scene {
   readonly bus = new Phaser.Events.EventEmitter();
+  pack!: ZonePack;
   private tiles: TileType[][] = [];
   private placedPuzzles = new Map<string, PlacedPuzzle>();
   player!: Player;
 
   constructor() { super("World"); }
 
-  create() {
+  create(data?: { pack?: ZonePack }) {
+    this.pack = data?.pack ?? getDefaultPack();
+    this.placedPuzzles = new Map();
+
     this.buildMap();
-    this.placePuzzlesForZone("forest");
+    this.placePuzzles();
 
-    this.player = new Player(this, 20, 12);
+    this.player = new Player(this, this.pack.spawn.x, this.pack.spawn.y);
 
-    this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
+    const widthPx = this.pack.width * TILE;
+    const heightPx = this.pack.height * TILE;
+    this.cameras.main.setBounds(0, 0, widthPx, heightPx);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
     this.cameras.main.setZoom(1.5);
 
     hints.start(this);
-    tutorial.start(this, "forest");
+    tutorial.start(this, this.pack.id, this.pack.tutorial);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       tutorial.stop();
@@ -53,7 +58,7 @@ export class World extends Phaser.Scene {
   }
 
   isWalkable(x: number, y: number): boolean {
-    if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return false;
+    if (x < 0 || y < 0 || x >= this.pack.width || y >= this.pack.height) return false;
     if (this.tiles[y]?.[x] === "tree") return false;
     const puzzle = this.puzzleAt(x, y);
     if (puzzle && !(puzzle.plugin.walkable ?? false)) return false;
@@ -88,51 +93,23 @@ export class World extends Phaser.Scene {
   }
 
   private buildMap() {
+    const { width, height, tiles: rows } = this.pack;
     this.tiles = [];
-    for (let y = 0; y < MAP_H; y++) {
+    for (let y = 0; y < height; y++) {
+      const rowStr = rows[y] ?? "";
       const row: TileType[] = [];
-      for (let x = 0; x < MAP_W; x++) {
-        row.push("grass");
+      for (let x = 0; x < width; x++) {
+        row.push(rowStr[x] === "T" ? "tree" : "grass");
       }
       this.tiles.push(row);
     }
 
-    // border of trees
-    for (let x = 0; x < MAP_W; x++) {
-      this.tiles[0]![x] = "tree";
-      this.tiles[MAP_H - 1]![x] = "tree";
-    }
-    for (let y = 0; y < MAP_H; y++) {
-      this.tiles[y]![0] = "tree";
-      this.tiles[y]![MAP_W - 1] = "tree";
-    }
+    // One TileSprite for the grass ground — single draw call, native 256px
+    // texture repeats every 4 tiles for natural variation
+    this.add.tileSprite(0, 0, width * TILE, height * TILE, "grass").setOrigin(0);
 
-    // Tree clusters create natural "rooms" / clearings between them.
-    // Clearings (kept empty for puzzles): NW, NE, center, SW, SE.
-    const interior: Array<[number, number]> = [
-      // Vertical band roughly down the middle, splitting NW from NE
-      [13, 3], [14, 3], [13, 4], [14, 5], [13, 6],
-      [25, 2], [25, 3], [26, 3], [25, 4], [26, 5],
-      // Horizontal band roughly across the middle, splitting top from bottom
-      [4, 11], [5, 11], [6, 12], [10, 11], [11, 12],
-      [29, 11], [30, 12], [31, 11], [34, 12], [35, 11],
-      // Bottom-half dividers (between SW and center, SE and center)
-      [13, 17], [14, 18], [13, 19],
-      [26, 17], [25, 18], [26, 19],
-      // Scattered accents
-      [8, 6], [33, 7], [3, 4], [37, 4],
-      [7, 20], [33, 20], [20, 21], [20, 2]
-    ];
-    for (const [tx, ty] of interior) {
-      if (this.tiles[ty]?.[tx] !== undefined) this.tiles[ty]![tx] = "tree";
-    }
-
-    // one TileSprite for the whole grass ground (one draw call, native 256px texture
-    // repeats every 4 tiles for natural variation)
-    this.add.tileSprite(0, 0, MAP_W * TILE, MAP_H * TILE, "grass").setOrigin(0);
-
-    for (let y = 0; y < MAP_H; y++) {
-      for (let x = 0; x < MAP_W; x++) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
         if (this.tiles[y]![x] !== "tree") continue;
         const { px, py } = this.tileToPixel(x, y);
         this.add.image(px, py, "tree").setDisplaySize(TILE, TILE);
@@ -140,9 +117,8 @@ export class World extends Phaser.Scene {
     }
   }
 
-  private placePuzzlesForZone(zone: string) {
-    const placements = allPuzzles.filter(p => p.zone === zone);
-    for (const placement of placements) {
+  private placePuzzles() {
+    for (const placement of this.pack.puzzles) {
       const plugin = getPlugin(placement.type);
       if (!plugin) {
         console.warn(`Unknown puzzle type "${placement.type}" for placement "${placement.id}"`);
