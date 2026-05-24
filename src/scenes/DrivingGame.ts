@@ -13,6 +13,7 @@ const PLAYER_X = 200;
 const CAR_DISPLAY = 150;
 const COLLISION_COOLDOWN_MS = 900;
 const STARTING_HEARTS = 5;
+const GAME_OVER_DURATION_MS = 5000;
 /** Car sprites have ~15-20% transparent padding around the visible car shape;
  *  use 60% of display size for collision so it feels fair to a 3yo. */
 const HITBOX_RATIO = 0.6;
@@ -178,36 +179,27 @@ export class DrivingGame extends Phaser.Scene {
   private triggerGameOver() {
     this.gameIsOver = true;
     audio.say("Game over!");
-    // Freeze traffic in place visually — they keep their positions but stop moving
     const { width, height } = this.scale;
 
+    // Dim backdrop so the splash reads cleanly against the frozen road
     this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0).setInteractive();
-    this.add.text(width / 2, height / 2 - 120, "Game Over", {
-      fontFamily: "system-ui, sans-serif",
-      fontSize: "84px",
-      color: "#ffffff",
-      fontStyle: "bold",
-      stroke: "#000000",
-      strokeThickness: 8
-    }).setOrigin(0.5);
 
-    this.makeButton(width / 2, height / 2 + 20, "Play Again", 0x1c8a3a, () => {
-      this.scene.restart({ onClose: this.onClose });
+    // Splash sized to ~80% of the smaller screen dimension
+    const target = Math.min(width, height) * 0.8;
+    const splash = this.add.image(width / 2, height / 2, "game-over")
+      .setDisplaySize(target, target);
+    this.tweens.add({
+      targets: splash,
+      scale: { from: splash.scale * 0.7, to: splash.scale },
+      duration: 350,
+      ease: "Back.easeOut"
     });
-    this.makeButton(width / 2, height / 2 + 130, "Quit", 0xc0392b, () => this.close());
-  }
 
-  private makeButton(x: number, y: number, label: string, color: number, onClick: () => void) {
-    const bg = this.add.rectangle(x, y, 320, 84, color, 0.95)
-      .setStrokeStyle(6, 0xffffff)
-      .setInteractive({ useHandCursor: true });
-    this.add.text(x, y, label, {
-      fontFamily: "system-ui, sans-serif",
-      fontSize: "40px",
-      color: "#ffffff",
-      fontStyle: "bold"
-    }).setOrigin(0.5);
-    bg.on("pointerdown", onClick);
+    // Auto-close back to the world after a few seconds. Tap anywhere to skip.
+    const finish = () => this.close();
+    this.time.delayedCall(GAME_OVER_DURATION_MS, finish);
+    this.input.once("pointerdown", finish);
+    this.input.keyboard?.once("keydown", finish);
   }
 
   private buildExitButton() {
