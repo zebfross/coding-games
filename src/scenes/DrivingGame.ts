@@ -12,6 +12,16 @@ const SPAWN_INTERVAL_MS = 1500;
 const PLAYER_X = 180;
 const CAR_DISPLAY = 110;
 const COLLISION_COOLDOWN_MS = 900;
+/** Car sprites have ~20% transparent padding in their PNGs and we want
+ *  collision to feel forgiving for a 3yo, so use ~60% of the display size. */
+const HITBOX_RATIO = 0.6;
+
+function carHitbox(car: Phaser.GameObjects.Sprite, out: Phaser.Geom.Rectangle): Phaser.Geom.Rectangle {
+  const w = car.displayWidth * HITBOX_RATIO;
+  const h = car.displayHeight * HITBOX_RATIO;
+  out.setTo(car.x - w / 2, car.y - h / 2, w, h);
+  return out;
+}
 
 export class DrivingGame extends Phaser.Scene {
   private onClose: (() => void) | null = null;
@@ -23,6 +33,9 @@ export class DrivingGame extends Phaser.Scene {
   private spawnTimer = 0;
   private collisionCooldown = 0;
   private stepHandler: ((dir: Direction) => void) | null = null;
+  // Reused per-frame to avoid per-tick allocations
+  private playerBox = new Phaser.Geom.Rectangle();
+  private trafficBox = new Phaser.Geom.Rectangle();
 
   constructor() { super("DrivingGame"); }
 
@@ -103,7 +116,7 @@ export class DrivingGame extends Phaser.Scene {
 
     if (this.collisionCooldown > 0) this.collisionCooldown -= delta;
 
-    const playerBox = this.playerCar.getBounds();
+    const playerBox = carHitbox(this.playerCar, this.playerBox);
     for (let i = this.traffic.length - 1; i >= 0; i--) {
       const car = this.traffic[i]!;
       car.x -= TRAFFIC_SPEED_PX_PER_FRAME * dt;
@@ -115,7 +128,7 @@ export class DrivingGame extends Phaser.Scene {
       }
 
       if (this.collisionCooldown <= 0 &&
-          Phaser.Geom.Rectangle.Overlaps(playerBox, car.getBounds())) {
+          Phaser.Geom.Rectangle.Overlaps(playerBox, carHitbox(car, this.trafficBox))) {
         this.collisionCooldown = COLLISION_COOLDOWN_MS;
         this.cameras.main.shake(180, 0.006);
         audio.say("Honk!");
