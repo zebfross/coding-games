@@ -36,9 +36,8 @@ export const puzzles: PuzzlePlacement[] = [
     config: {
       prompt: "Pick a flavor!",
       options: [
+        { id: "strawberry", texture: "flavor-strawberry", speech: "Strawberry! Sweet and pink." },
         { id: "vanilla",    texture: "flavor-vanilla",    speech: "Vanilla! Yum." },
-        { id: "chocolate",  texture: "flavor-chocolate",  speech: "Chocolate! So tasty." },
-        { id: "strawberry", texture: "flavor-strawberry", speech: "Strawberry! Sweet." },
         { id: "mint",       texture: "flavor-mint",       speech: "Mint! Cool and fresh." }
       ]
     } },
