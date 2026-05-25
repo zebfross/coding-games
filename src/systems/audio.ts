@@ -25,12 +25,17 @@ class AudioManager {
   say(text: string) {
     if (this.muted) return;
     if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
+    const synth = window.speechSynthesis;
+    // Known Chrome bug: cancel() can leave the synth in a paused-but-empty
+    // state where subsequent speak() calls silently do nothing. resume()
+    // wakes it up. Safe on other browsers (no-op when not paused).
+    synth.cancel();
+    synth.resume();
     const utter = new SpeechSynthesisUtterance(text);
     if (this.voice) utter.voice = this.voice;
     utter.rate = 0.95;
     utter.pitch = 1.2;
-    window.speechSynthesis.speak(utter);
+    synth.speak(utter);
   }
 
   isMuted(): boolean { return this.muted; }
