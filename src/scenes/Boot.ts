@@ -25,6 +25,13 @@ export class Boot extends Phaser.Scene {
     const start = () => {
       if (started) return;
       started = true;
+
+      // Unlock Phaser's WebAudio context. Browsers suspend it until a user
+      // gesture; the splash button is a Text object so Phaser's auto-unlock
+      // (which listens on the canvas) doesn't always catch it.
+      const ctx = (this.sound as Phaser.Sound.WebAudioSoundManager | undefined)?.context;
+      if (ctx && ctx.state === "suspended") void ctx.resume();
+
       // Prime speech synthesis with the first user gesture so it works later
       if ("speechSynthesis" in window) {
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
