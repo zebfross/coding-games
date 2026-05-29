@@ -33,6 +33,34 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.tryStep(dir);
   };
 
+  /**
+   * Force-move the player onto a tile, bypassing the walkability check.
+   * Used by the `house` plugin to slide the player onto the house tile
+   * before the interior scene opens — SMW-style "walk onto the level
+   * icon, then enter" beat.
+   */
+  moveTo(tileX: number, tileY: number, onComplete?: () => void) {
+    if (this.busy) {
+      // Cancel any pending step so we don't tween from a stale position
+      this.scene.tweens.killTweensOf(this);
+    }
+    this.busy = true;
+    this.tileX = tileX;
+    this.tileY = tileY;
+    const { px, py } = this.world.tileToPixel(tileX, tileY);
+    this.scene.tweens.add({
+      targets: this,
+      x: px,
+      y: py,
+      duration: STEP_DURATION,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.busy = false;
+        onComplete?.();
+      }
+    });
+  }
+
   private tryStep(dir: Direction) {
     if (this.busy) return;
     // Guard against the popup-open case: input events still fire (so the

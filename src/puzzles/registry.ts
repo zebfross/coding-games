@@ -2,6 +2,7 @@ import type { PuzzlePlugin } from "./types";
 import { causeEffect } from "./causeEffect";
 import { choice } from "./choice";
 import { driving } from "./driving";
+import { house } from "./house";
 
 const plugins = new Map<string, PuzzlePlugin<any>>();
 
@@ -23,3 +24,4 @@ export function getPlugin(type: string): PuzzlePlugin<any> | undefined {
 register(causeEffect);
 register(choice);
 register(driving);
+register(house);
